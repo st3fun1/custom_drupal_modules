@@ -1,0 +1,199 @@
+<?php
+
+/**
+ * Implements hook_node_info().
+ * Define new node content type
+ */
+
+function event_node_info() {
+    return array(
+        'event' => array(
+            'name' => t('Event'),
+            'base' => 'event',
+            'description' => 'Simple event content type',
+            'hast_title' => TRUE,
+            'title_label' => 'New Event',
+        ),
+    );
+}
+
+
+/**
+ *  Implements hook_node_type_insert().
+ *  1) This hook let us know that a new content type has been inserted
+ *  2) We can add new fields if we want
+ */
+
+ function event_node_type_insert($content_type) {
+     if($content_type->type == 'event') {
+
+         //Create all the fields we are adding to our content type.
+         foreach(  _event_installed_fields() as $field ) {
+             field_create_field($field);
+         }
+
+         //Create all the instances for our fields.
+         foreach( _event_installed_instances() as $instance ) {
+             $instance['entity_type'] = 'node';
+             $instance['bundle'] = 'event';
+             field_create_instance($instance);
+         }
+
+     }
+ }
+
+
+ /**
+  * Implements hook_form().
+  */
+
+function event_form($node, $form_state) {
+    return node_content_form($node, $form_state);
+}
+
+/**
+ * Implemenets hook_entity_info_alter().
+ * add new viewmode to be used in functions like node_view()/ node_build_content()
+ */
+
+function event_entity_info_alter(&$entity_info) {
+    //add the new view mode(event_display_mode) to the list of view mcrypt_list_modes
+    //view modes in Structure > Content Type > #Content Type Name > Manage Display
+    $entity_info['node']['view modes']['event_display_mode'] = array(
+        'label' => t('Example Node List'),
+        'custom settings' => TRUE,
+    );
+}
+
+/**
+ * Implements hook_help().
+ */
+
+function event_help($path, $arg) {
+    switch($path) {
+        case 'admin/help#event': return '<p>' . t('Create an Event Node!') . '</p>';
+        break;
+    }
+}
+
+/**
+ * Define fields for our content type
+ */
+function _event_installed_fields() {
+    return array(
+       'event_participants' => array(
+           'field_name' => 'event_participants',
+           'cardinality' => 1,
+           'type' => 'text',
+           'settings' => array(
+               'max_length' => 200,
+           ),
+
+       ),
+       'event_date' => array(
+           'field_name' => 'event_date',
+           'cardinality' => 1,
+           'type' => 'text',
+           'settings' => array(
+               'max_length' => 50,
+           )
+       ),
+       'event_location' => array(
+           'field_name' => 'event_location',
+           'cardinality' => 1,
+           'type' => 'text',
+           'settings' => array(
+               'max_length' => 50,
+           )
+       ),
+
+    );
+}
+
+/**
+ * Define field instances for our content type.
+ * Display a page that uses custom view mode
+ */
+function _event_installed_instances() {
+    return array(
+        'event_participants' => array(
+            'field_name' => 'event_participants',
+            'label' => t('The participants of current event'),
+            'widget' => array(
+                'type' => 'text_textfield',
+            ),
+            'display' => array(
+                'event_display_mode' => array(
+                    'label' => 'hidden',
+                    'type' => 'event_participants',
+                ),
+            ),
+        ),
+        'event_date' => array(
+            'field_name' => 'event_date',
+            'label' => t('Start date of the event'),
+            'widget' => array(
+                'type' => 'text_textfield',
+            ),
+            'display' => array(
+                'event_display_mode' => array(
+                    'label' => 'hidden',
+                    'type' => 'event_date',
+                ),
+            ),
+        ),
+        'event_location' => array(
+            'field_name' => 'event_location',
+            'label' => t('Event location'),
+            'widget' => array(
+                'type' => 'text_textfield',
+            ),
+            'display' => array(
+                'event_display_mode' => array(
+                    'label' => 'hidden',
+                    'type' => 'event_location'
+                ),
+            ),
+        ),
+    );
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function event_uninstall() {
+
+    //Remove existint
+    $query = 'SELECT nid FROM {node}  WHERE {node}.type = :type';
+
+    $result = db_query( $query, array(':type' => 'event'));
+
+    $nids = array();
+
+    foreach( $result as $row ) {
+        $nids = $row->nid;
+    }
+
+    node_delete_multiple( $nids );
+
+    //Delete fields and _event_installed_instances
+    foreach( field_info_instances('node','event') as $field_name => $instance) {
+        field_delete_instance($instance);
+    }
+
+    //Delete content type 
+    node_type_delete('event');
+
+    // ! Inca nu stiu ce face
+    field_purge_batch(1000);
+
+}
+
+/**
+ * Implements hook_install().
+ */
+
+ function event_install() {
+     //save all of the new node types created by a different module(including this one)
+     node_types_rebuild();
+ }

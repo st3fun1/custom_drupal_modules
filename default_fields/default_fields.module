@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * Implements hook_form_alter().
+ */
+
+ function default_fields_form_alter(&$form, &$form_state, $form_id) {
+     $form_tag = explode('_',$form_id)[0];
+     if($form_tag == 'event'){
+         //dpm($form);
+         $form['event_date']['und'][0]['value']['#default_value'] = date('l jS \of F Y');
+         $form['event_location']['und'][0]['value']['#default_value'] = 'Iasi';
+     }
+ }
+
+
+ /**
+ * Implements hook_menu().
+ */
+
+function default_fields_menu() {
+    $items['events/list'] = array(
+        'page callback' => 'default_fields_list_page',
+        'access arguments' => array('access content'),
+        'title' => t('All Events'),
+        'type' => MENU_NORMAL_ITEM,
+        'menu_name' => 'All Events',
+    );
+
+    return $items;
+}
+
+function default_fields_list_page() {
+    $render_array = array(); // aka our page 
+
+    //query db to find all nodes of type 'event' 
+    $sql = 'SELECT nid FROM {node} n WHERE n.type = :type and n.status = :status';
+    $result = db_query($sql, array(
+        ':type' => 'event',
+        ':status' => '1',
+    ));
+
+    $render_array['info'] = array(
+        '#markup' => '<p>' . t('This page contains the list of events in a given location.') . '</p>',
+    );
+
+    //loop through each of the nodes and instruct node_view
+
+    foreach($result as $row) {
+        $node = node_load($row->nid);
+        $render_array['node_list'][] = node_view($node,'event');
+    }
+    return $render_array;
+}

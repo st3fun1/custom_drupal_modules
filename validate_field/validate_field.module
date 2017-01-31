@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * Implements hook_form_alter().
+ */
+
+ function validate_field_form_alter(&$form, &$form_state, $form_id) {
+     //form_state shows the array containing the submitted data
+     $form_tag = explode('_',$form_id)[0];
+     if($form_tag == 'event'){
+        $form['#validate'][] = 'validate_field_form_validate';
+        //dpm($form);
+     }
+ }
+
+
+ function validate_field_form_validate($form, &$form_state){
+     //dpm($form_state);
+     if($form_state['input']['event_location']['und'][0]['value'] != 'Bucuresti'){
+         form_set_error($form['event_location']['und'][0]['#field_name'], 'Please enter Bucuresti as the city name for the current event!');
+     }
+ }

@@ -1,0 +1,7 @@
+name = validate_field
+description = Exercise 2 of 2
+core = 7.x
+
+files[] = validate_field.module
+
+dependencies[] = event
