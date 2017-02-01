@@ -43,10 +43,10 @@ function generate_random_location() {
     return $locations[mt_rand(0,$locations_len - 1)];
 }
 
-function generate_link_to_nodes() {
+function generate_link_to_nodes($path) {
     global $base_url;
     global $base_path;
-    $link = $base_url . $base_path . 'events/list';
+    $link = $base_url . $base_path . $path;
     return $link;
 }
 
@@ -63,6 +63,7 @@ function generate_random_participants() {
 
 function generate_nodes_generate() {
     $content_type = 'event';
+    $message = '';
     for($i = 0 ; $i < 10; $i++){
         $node = new stdClass();
 
@@ -72,23 +73,28 @@ function generate_nodes_generate() {
 
         //node_object_prepare($node);
         
-        $node->event_participants['und'][0]['value'] = generate_random_participants();
-        $node->event_participants['und'][0]['safe_value'] = generate_random_participants();
-
-        $node->event_date['und'][0]['value'] = generate_random_date();
-        $node->event_date['und'][0]['safe_value'] = generate_random_date();
-
-        $node->event_location['und'][0]['value'] = generate_random_location();
-        $node->event_location['und'][0]['value'] = generate_random_location();
-
+        $rand_participants = generate_random_participants();
+        $node->event_participants['und'][0]['value'] = $rand_participants;
+        $node->event_participants['und'][0]['safe_value'] = $rand_participants;
         $node->language = LANGUAGE_NONE;
+        $random_date = generate_random_date();
+        $node->event_date['und'][0]['value'] = $random_date;
+        $node->event_date['und'][0]['safe_value'] = $random_date;
+        $node->event_location['und'][0]['value'] = generate_random_location();
         $node->uid = 1;
-        $node = node_submit($node);
-        node_save($node);
-    }
+        if($node = node_submit($node)){
 
-    $message = '<p>' . t('Your nodes have been created successfuly!') . '</p>';
-    $message .= '<p>' . t('You can view your nodes at the following ');
-    $message .= '<a href="' . generate_link_to_nodes() . '">' . t('address') . '</a>.</p>';
+            node_save($node);
+
+            $message = '<p>' . t('Your nodes have been created successfuly!') . '</p>';
+            $message .= '<p>' . t('You can view your nodes at the following ');
+            $message .= '<a href="' . generate_link_to_nodes('events/list') . '">' . t('address') . '</a> ';
+            $message .= 'or you can create new content again by clicking <a href="' . generate_link_to_nodes('events/generated-list');
+            $message .= '">here</a>.</p>';
+        } else{
+            $message = t('An error occured and processing did not complete.');
+        }
+        
+    }
     return $message;
 }
